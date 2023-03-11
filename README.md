@@ -12,7 +12,7 @@ This is an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC11
 2. Input words which you want to limit scope in `Target tokens`.
 3. Generate images.
 
-### Examples
+## Examples
 
 ```
 Prompt: a cute girl, white shirt with green tie, red shoes, blue hair, yellow eyes, pink skirt
