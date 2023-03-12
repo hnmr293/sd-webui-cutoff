@@ -15,6 +15,7 @@ This is an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC11
 ## Examples
 
 ```
+7th_anime_v3_A-fp16 / DPM++ 2M Karras / 15 steps / 512x768
 Prompt: a cute girl, white shirt with green tie, red shoes, blue hair, yellow eyes, pink skirt
 Negative Prompt: (low quality, worst quality:1.4), nsfw
 Target tokens: white, green, red, blue, yellow, pink
