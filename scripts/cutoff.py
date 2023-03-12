@@ -137,8 +137,6 @@ class Script(scripts.Script):
         return scripts.AlwaysVisible
     
     def ui(self, is_img2img):
-        mode = 'img2img' if is_img2img else 'txt2img'
-        
         with gr.Accordion(NAME, open=False):
             enabled = gr.Checkbox(label='Enabled', value=False)
             targets = gr.Textbox(label='Target tokens (comma separated)', placeholder='red, blue')
