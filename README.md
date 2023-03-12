@@ -26,3 +26,45 @@ Target tokens: white, green, red, blue, yellow, pink
 ![sample 2](./images/sample-2.png)
 
 ![sample 3](./images/sample-3.png)
+
+## How it works
+
+![idea](./images/idea.png)
+
+### Japanese
+
+プロンプトをCLIPに通して得られる (77, 768) 次元の埋め込み表現（？正式な用語は分かりません）について、
+ごく単純には、77個の行ベクトルはプロンプト中の75個のトークン（＋開始トークン＋終了トークン）に対応していると考えられる。
+
+※上図は作図上、この説明とは行と列を入れ替えて描いている。
+
+このベクトルには単語単体の意味だけではなく、文章全体の、例えば係り結びなどの情報を集約したものが入っているはずである。
+
+ここで `a cute girl, pink hair, red shoes` というプロンプトを考える。
+普通、こういったプロンプトの意図は
+
+1. `pink` は `hair` だけに係っており `shoes` には係っていない。
+2. 同様に `red` も `hair` には係っていない。
+3. `a cute girl` は全体に係っていて欲しい。`hair` や `shoes` は女の子に合うものが出て欲しい。
+
+……というもののはずである。
+
+しかしながら、[EvViz2](https://github.com/hnmr293/sd-webui-evviz2) などでトークン間の関係を見ると、そううまくはいっていないことが多い。
+つまり、`shoes` の位置のベクトルに `pink` の影響が出てしまっていたりする。
+
+一方で上述の通り `a cute girl` の影響は乗っていて欲しいわけで、どうにかして、特定のトークンの影響を取り除けるようにしたい。
+
+この拡張では、指定されたトークンを *padding token* に書き換えることでそれを実現している。
+
+たとえば `red shoes` の部分に対応して `a cute girl, _ hair, red shoes` というプロンプトを生成する。`red` と `shoes` に対応する位置のベクトルをここから生成したもので上書きしてやることで、`pink` の影響を除外している。
+
+これを `pink` の側から見ると、自分の影響が `pink hair` の範囲内に制限されているように見える。What is this? の "limits the tokens' influence scope" はそういう意味。
+
+ところで `a cute girl` の方は、`pink hair, red shoes` の影響を受けていてもいいし受けなくてもいいような気がする。
+そこでこの拡張では、こういうどちらでもいいプロンプトに対して
+
+1. `a cute girl, pink hair, red shoes`
+2. `a cute girl, _ hair, _ shoes`
+
+のどちらを適用するか選べるようにしている。`Details` の `Cutoff strongly` がそれで、オフのとき1.を、オンのとき2.を、それぞれ選ぶようになっている。
+元絵に近いのが出るのはオフのとき。デフォルトもこちらにしてある。
