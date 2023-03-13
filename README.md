@@ -2,6 +2,21 @@
 
 ![cover](./images/cover.jpg)
 
+<details>
+<summary>Update Info</summary>
+
+Upper is newer.
+
+<dl>
+<dt>20e87ce264338b824296b7559679ed1bb0bdacd7</dt>
+<dd>Skip empty targets.</dd>
+<dt>03bfe60162ba418e18dbaf8f1b9711fd62195ef3</dt>
+<dd>Add <code>Disable for Negative prompt</code> option. Default is <code>True</code>.</dd>
+<dt>f0990088fed0f5013a659cacedb194313a398860</dt>
+<dd>Accept an empty prompt.</dd>
+</dl>
+</details>
+
 ## What is this?
 
 This is an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui) which limits the tokens' influence scope.
