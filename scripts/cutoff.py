@@ -107,6 +107,11 @@ class Hook(SDHook):
                 
                 skip = True
                 ks = list(prompt_to_tokens.keys())
+                
+                if len(ks) == 0:
+                    # without any (negative) prompts
+                    ks.append('')
+                
                 try:
                     vs = mod(ks)
                 finally:
