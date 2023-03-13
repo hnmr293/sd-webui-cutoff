@@ -27,6 +27,10 @@ This is an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC11
 2. Input words which you want to limit scope in `Target tokens`.
 3. Generate images.
 
+## Note
+
+If the generated image was corrupted or something like that, try to change the `Weight` value or change the interpolation method to `SLerp`. Interpolation method can be found in `Details`.
+
 ## Examples
 
 ```
