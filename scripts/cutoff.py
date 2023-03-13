@@ -211,6 +211,10 @@ class Script(scripts.Script):
             return
         
         targets = [x.strip() for x in targets_.split(',')]
+        targets = [x for x in targets if len(x) != 0]
+        
+        if len(targets) == 0:
+            return
         
         if padding is None:
             padding = PAD
