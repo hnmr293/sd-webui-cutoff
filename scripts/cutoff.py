@@ -17,6 +17,15 @@ from scripts.cutofflib.xyz import init_xyz
 NAME = 'Cutoff'
 PAD = '_</w>'
 
+def check_neg(s: str, negative_prompt: str, all_negative_prompts: Union[List[str],None]):
+    if s == negative_prompt:
+        return True
+    
+    if all_negative_prompts is not None:
+        return s in all_negative_prompts
+    
+    return False
+
 def slerp(t, v0, v1, DOT_THRESHOLD=0.9995):
     # cf. https://memo.sugyan.com/entry/2022/09/09/230645
 
@@ -53,6 +62,7 @@ class Hook(SDHook):
         targets: List[str],
         padding: Union[str,int],
         weight: float,
+        disable_neg: bool,
         strong: bool,
         interpolate: str,
     ):
@@ -60,6 +70,7 @@ class Hook(SDHook):
         self.targets = targets
         self.padding = padding
         self.weight = float(weight)
+        self.disable_neg = disable_neg
         self.strong = strong
         self.intp = interpolate
     
@@ -77,12 +88,21 @@ class Hook(SDHook):
             nonlocal skip
             
             if skip:
+                # called from <A> below
                 return
             
             assert isinstance(mod, CLIP)
             
             prompts, *rest = inputs
             assert len(prompts) == output.shape[0]
+            
+            # Check wether we are processing Negative prompt or not.
+            # I firmly believe there is no one who uses a negative prompt 
+            # exactly identical to a prompt.
+            if self.disable_neg:
+                if all(check_neg(x, p.negative_prompt, p.all_negative_prompts) for x in prompts):
+                    # Now we are processing Negative prompt and skip it.
+                    return
             
             output = output.clone()
             for pidx, prompt in enumerate(prompts):
@@ -105,14 +125,14 @@ class Hook(SDHook):
                 
                 #log(prompt_to_tokens)
                 
-                skip = True
                 ks = list(prompt_to_tokens.keys())
-                
                 if len(ks) == 0:
                     # without any (negative) prompts
                     ks.append('')
                 
                 try:
+                    # <A>
+                    skip = True
                     vs = mod(ks)
                 finally:
                     skip = False
@@ -147,6 +167,7 @@ class Script(scripts.Script):
             targets = gr.Textbox(label='Target tokens (comma separated)', placeholder='red, blue')
             weight = gr.Slider(minimum=-1.0, maximum=2.0, step=0.01, value=0.5, label='Weight')
             with gr.Accordion('Details', open=False):
+                disable_neg = gr.Checkbox(value=True, label='Disable for Negative prompt.')
                 strong = gr.Checkbox(value=False, label='Cutoff strongly.')
                 padding = gr.Textbox(label='Padding token (ID or single token)')
                 lerp = gr.Radio(choices=['Lerp', 'SLerp'], value='Lerp', label='Interpolation method')
@@ -158,6 +179,7 @@ class Script(scripts.Script):
             enabled,
             targets,
             weight,
+            disable_neg,
             strong,
             padding,
             lerp,
@@ -170,6 +192,7 @@ class Script(scripts.Script):
         enabled: bool,
         targets_: str,
         weight: Union[float,int],
+        disable_neg: bool,
         strong: bool,
         padding: Union[str,int],
         intp: str,
@@ -209,6 +232,7 @@ class Script(scripts.Script):
             targets=targets,
             padding=padding,
             weight=weight,
+            disable_neg=disable_neg,
             strong=strong,
             interpolate=intp,
         )
@@ -217,11 +241,13 @@ class Script(scripts.Script):
         self.last_hooker.__enter__()
         
         p.extra_generation_params.update({
-            f'{NAME} Enabled': enabled,
+            f'{NAME} enabled': enabled,
             f'{NAME} targets': targets,
             f'{NAME} padding': padding,
             f'{NAME} weight': weight,
+            f'{NAME} disable_for_neg': disable_neg,
             f'{NAME} strong': strong,
+            f'{NAME} interpolation': intp,
         })
 
 init_xyz(Script, NAME)
