@@ -34,15 +34,21 @@ If the generated image was corrupted or something like that, try to change the `
 ## Examples
 
 ```
-7th_anime_v3_A-fp16 / DPM++ 2M Karras / 15 steps / 512x768
+7th_anime_v3_A-fp16 / kl-f8-anime2 / DPM++ 2M Karras / 15 steps / 512x768
 Prompt: a cute girl, white shirt with green tie, red shoes, blue hair, yellow eyes, pink skirt
 Negative Prompt: (low quality, worst quality:1.4), nsfw
 Target tokens: white, green, red, blue, yellow, pink
 ```
 
+Sample 1.
+
 ![sample 1](./images/sample-1.png)
 
+Sample 2. (use `SLerp` for interpolation)
+
 ![sample 2](./images/sample-2.png)
+
+Sample 3.
 
 ![sample 3](./images/sample-3.png)
 
