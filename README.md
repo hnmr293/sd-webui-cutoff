@@ -35,15 +35,14 @@ If the generated image was corrupted or something like that, try to change the `
 
 <dl>
 <dt>Disable for Negative prompt.</dt>
-<dd>If enabled, **Cutoff** will not work for the negative prompt. Default is <code>false</code>.</dd>
+<dd>If enabled, <b>Cutoff</b> will not work for the negative prompt. Default is <code>true</code>.</dd>
 <dt>Cutoff strongly.</dt>
-<dd>See [description below](#how-it-works). Default is <code>false</code>.</dd>
+<dd>See <a href="#how-it-works">description below</a>. Default is <code>false</code>.</dd>
 <dt>Interpolation method</dt>
 <dd>How "padded" and "original" vectors will be interpolated. Default is <code>Lerp</code>.</dd>
 <dt>Padding token</dt>
 <dd>What token will be padded instead of <code>Target tokens</code>. Default is <code>_</code> (underbar).</dd>
 </dl>
-
 
 ## Examples
 
@@ -68,12 +67,12 @@ Sample 3.
 
 ## How it works
 
-![idea](./images/idea.png)
-
 - [Japanese](#japanese)
 - [English](#english)
 
-or see #5.
+or see #5 ([issues](./issues/5)).
+
+![idea](./images/idea.png)
 
 ### Japanese
 
