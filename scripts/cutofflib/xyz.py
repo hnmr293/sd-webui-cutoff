@@ -61,7 +61,8 @@ def init_xyz(script: type, ext_name: str):
             define('Weight', 2, float)
             define('Disable for Negative Prompt', 3, to_bool, choices=['false', 'true'])
             define('Strong', 4, to_bool, choices=['false', 'true'])
-            define('Padding', 5, str)
-            define('Interpolation', 6, str, choices=['Lerp', 'SLerp'])
+            define('Interpolation', 5, str, choices=['Lerp', 'SLerp'])
+            define('Padding', 6, str)
+            define('Zero-fills', 7, to_bool, choices=['false', 'true'])
             
     __init = True

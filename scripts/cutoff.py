@@ -7,7 +7,9 @@ from torch import Tensor, nn
 import gradio as gr
 
 from modules.processing import StableDiffusionProcessing
-from modules import scripts
+from modules import scripts, xlmr
+from modules.sd_hijack import EmbeddingsWithFixes
+from ldm.modules.encoders.modules import FrozenCLIPEmbedder, FrozenOpenCLIPEmbedder
 
 from scripts.cutofflib.sdhook import SDHook
 from scripts.cutofflib.embedding import CLIP, generate_prompts, token_to_block
@@ -53,6 +55,17 @@ def slerp(t, v0, v1, DOT_THRESHOLD=0.9995):
 
     return v2
 
+def get_token_embedding(clip: nn.Module) -> EmbeddingsWithFixes:
+    wrapped = clip.wrapped
+    if isinstance(wrapped, xlmr.BertSeriesModelWithTransformation):
+        return wrapped.roberta.embeddings.token_embedding # type: ignore
+    elif isinstance(wrapped, FrozenCLIPEmbedder):
+        return wrapped.transformer.text_model.embeddings.token_embedding.wrapped  # type: ignore
+    elif isinstance(wrapped, FrozenOpenCLIPEmbedder):
+        return wrapped.model.token_embedding.wrapped  # type: ignore
+    else:
+        raise ValueError(f'unknown CLIP type: {clip.__class__.__name__}')
+
 
 class Hook(SDHook):
     
@@ -61,6 +74,7 @@ class Hook(SDHook):
         enabled: bool,
         targets: List[str],
         padding: Union[str,int],
+        zerofill: bool,
         weight: float,
         disable_neg: bool,
         strong: bool,
@@ -69,6 +83,7 @@ class Hook(SDHook):
         super().__init__(enabled)
         self.targets = targets
         self.padding = padding
+        self.zerofill = zerofill
         self.weight = float(weight)
         self.disable_neg = disable_neg
         self.strong = strong
@@ -83,6 +98,19 @@ class Hook(SDHook):
     def hook_clip(self, p: StableDiffusionProcessing, clip: nn.Module):
         
         skip = False
+        
+        if self.zerofill:
+            def hook_emb(mod: nn.Module, inputs: Tuple[List[int]], output: Tensor):
+                if not skip:
+                    return
+                
+                # called from <A> below
+                import pdb; pdb.set_trace()
+                a=1
+                pass
+            
+            token_embedding = get_token_embedding(clip)
+            self.hook_layer(token_embedding, hook_emb)
         
         def hook(mod: nn.Module, inputs: Tuple[List[str]], output: Tensor):
             nonlocal skip
@@ -169,8 +197,9 @@ class Script(scripts.Script):
             with gr.Accordion('Details', open=False):
                 disable_neg = gr.Checkbox(value=True, label='Disable for Negative prompt.')
                 strong = gr.Checkbox(value=False, label='Cutoff strongly.')
-                padding = gr.Textbox(label='Padding token (ID or single token)')
                 lerp = gr.Radio(choices=['Lerp', 'SLerp'], value='Lerp', label='Interpolation method')
+                padding = gr.Textbox(label='Padding token (ID or single token)')
+                zerofill = gr.Checkbox(value=False, label='Zero-fills')
             
             debug = gr.Checkbox(value=False, label='Debug log')
             debug.change(fn=set_debug, inputs=[debug], outputs=[])
@@ -181,8 +210,9 @@ class Script(scripts.Script):
             weight,
             disable_neg,
             strong,
-            padding,
             lerp,
+            padding,
+            zerofill,
             debug,
         ]
     
@@ -194,8 +224,9 @@ class Script(scripts.Script):
         weight: Union[float,int],
         disable_neg: bool,
         strong: bool,
-        padding: Union[str,int],
         intp: str,
+        padding: Union[str,int],
+        zerofill: bool,
         debug: bool,
     ):
         set_debug(debug)
@@ -235,6 +266,7 @@ class Script(scripts.Script):
             enabled=True,
             targets=targets,
             padding=padding,
+            zerofill=zerofill,
             weight=weight,
             disable_neg=disable_neg,
             strong=strong,
@@ -248,6 +280,7 @@ class Script(scripts.Script):
             f'{NAME} enabled': enabled,
             f'{NAME} targets': targets,
             f'{NAME} padding': padding,
+            f'{NAME} zerofill': zerofill,
             f'{NAME} weight': weight,
             f'{NAME} disable_for_neg': disable_neg,
             f'{NAME} strong': strong,
