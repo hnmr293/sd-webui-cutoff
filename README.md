@@ -31,6 +31,20 @@ This is an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC11
 
 If the generated image was corrupted or something like that, try to change the `Weight` value or change the interpolation method to `SLerp`. Interpolation method can be found in `Details`.
 
+### `Details` section
+
+<dl>
+<dt>Disable for Negative prompt.</dt>
+<dd>If enabled, **Cutoff** will not work for the negative prompt. Default is <code>false</code>.</dd>
+<dt>Cutoff strongly.</dt>
+<dd>See [description below](#how-it-works). Default is <code>false</code>.</dd>
+<dt>Interpolation method</dt>
+<dd>How "padded" and "original" vectors will be interpolated. Default is <code>Lerp</code>.</dd>
+<dt>Padding token</dt>
+<dd>What token will be padded instead of <code>Target tokens</code>. Default is <code>_</code> (underbar).</dd>
+</dl>
+
+
 ## Examples
 
 ```
@@ -55,6 +69,11 @@ Sample 3.
 ## How it works
 
 ![idea](./images/idea.png)
+
+- [Japanese](#japanese)
+- [English](#english)
+
+or see #5.
 
 ### Japanese
 
@@ -93,3 +112,36 @@ Sample 3.
 
 のどちらを適用するか選べるようにしている。`Details` の `Cutoff strongly` がそれで、オフのとき1.を、オンのとき2.を、それぞれ選ぶようになっている。
 元絵に近いのが出るのはオフのとき。デフォルトもこちらにしてある。
+
+### English
+
+NB. The following text is a translation of the Japanese text above by [DeepL](https://www.deepl.com/translator).
+
+For the (77, 768) dimensional embedded representation (I don't know the formal terminology), one could simply assume that the 77 row vectors correspond to the 75 tokens (+ start token and end token) in the prompt.
+
+Note: The above figure is drawn with the rows and columns interchanged from this explanation.
+
+This vector should contain not only the meanings of individual words, but also the aggregate information of the whole sentence, for example, the connection between words.
+
+Consider the prompt `a cute girl, pink hair, red shoes`. Normally, the intent of such a prompt would be
+
+- `pink` is only for `hair`, not `shoes`.
+- Similarly, `red` does not refer to `hair`.
+- We want `a cute girl` to be about the whole thing, and we want the `hair` and `shoes` to match the girl.
+
+However, when we look at the relationship between tokens in [EvViz2](https://github.com/hnmr293/sd-webui-evviz2) and other tools, we see that it is not always that way. In other words, the position vector of the `shoes` may be affected by `pink`.
+
+On the other hand, as mentioned above, we want the influence of `a cute girl` to be present, so we want to be able to somehow remove the influence of a specific token.
+
+This extension achieves this by rewriting the specified tokens as a *padding token*.
+
+For example, for the `red shoes` part, we generate the prompt `a cute girl, _ hair, red shoes`, and by overwriting the position vectors corresponding to `red` and `shoes` with those generated from this prompt, we remove the influence of `pink`.
+
+From `pink`'s point of view, it appears that its influence is limited to the `pink hair`'s scope.
+
+By the way, `a cute girl` may or may not be influenced by `pink hair` and `red shoes`. So, in this extension, for such a prompt that can be either
+
+1. `a cute girl, pink hair, red shoes`
+2. `a cute girl, _ hair, _ shoes`
+
+The `Cutoff strongly` in the `Details` section allows you to select 1 when it is off and 2 when it is on. The one that comes out closer to the original image is "off". The default is also set this way.
