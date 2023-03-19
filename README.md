@@ -70,7 +70,7 @@ Sample 3.
 - [Japanese](#japanese)
 - [English](#english)
 
-or see #5 ([issues](./issues/5)).
+or see [#5](/hnmr293/sd-webui-cutoff/issues/5).
 
 ![idea](./images/idea.png)
 
