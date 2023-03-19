@@ -143,7 +143,10 @@ class SDHook:
         
         assert module is not None
         assert isinstance(module, nn.Module)
-        self._handles.append(module.register_forward_hook(fn))
+        
+        handle = module.register_forward_hook(fn)
+        self._handles.append(handle)
+        return handle
 
     def hook_layer_pre(
         self,
@@ -155,7 +158,10 @@ class SDHook:
         
         assert module is not None
         assert isinstance(module, nn.Module)
-        self._handles.append(module.register_forward_pre_hook(fn))
+        
+        handle = module.register_forward_pre_hook(fn)
+        self._handles.append(handle)
+        return handle
 
     def hook_forward(
         self,
@@ -164,7 +170,10 @@ class SDHook:
     ):
         assert module is not None
         assert isinstance(module, nn.Module)
-        self._handles.append(ForwardHook(module, fn))
+        
+        handle = ForwardHook(module, fn)
+        self._handles.append(handle)
+        return handle
     
     def log(self, msg: str):
         print(msg, file=sys.stderr)

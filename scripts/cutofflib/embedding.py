@@ -50,9 +50,11 @@ class Token:
 class CutoffPrompt:
     
     @staticmethod
-    def _cutoff(prompt: str, clip: CLIP, tokens: List[str], padding: str):
+    def _cutoff(prompt: str, clip: CLIP, tokens: List[str], padding: Token):
+        pad = padding.token.replace('</w>', '')
+        
         re_targets = [ re.compile(r'\b' + re.escape(x) + r'\b') for x in tokens ]
-        replacer = [ ' ' + ' '.join([padding] * len(clip.tokenize(x))) + ' ' for x in tokens ]
+        replacer = [ ' ' + ' '.join([pad] * len(clip.tokenize(x))) + ' ' for x in tokens ]
         
         rows: List[Tuple[str,str]] = []
         for block in prompt.split(','):
@@ -64,8 +66,9 @@ class CutoffPrompt:
         
         return rows
     
-    def __init__(self, prompt: str, clip: CLIP, tokens: List[str], padding: str):
+    def __init__(self, prompt: str, clip: CLIP, tokens: List[str], padding: Token):
         self.prompt = prompt
+        self.padding = padding
         rows = CutoffPrompt._cutoff(prompt, clip, tokens, padding)
         self.base = np.array([x[0] for x in rows])
         self.cut  = np.array([x[1] for x in rows])
@@ -114,7 +117,7 @@ def generate_prompts(
         if padding.id == clip.id_end:
             raise ValueError(f'`{o_pad}` is not a valid token.')
     
-    result = CutoffPrompt(prompt, clip, targets, padding.token.replace('</w>', ''))
+    result = CutoffPrompt(prompt, clip, targets, padding)
     
     log(f'[Cutoff] replace: {", ".join(targets)}')
     log(f'[Cutoff] to: {padding.token} ({padding.id})')

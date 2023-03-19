@@ -99,19 +99,6 @@ class Hook(SDHook):
         
         skip = False
         
-        if self.zerofill:
-            def hook_emb(mod: nn.Module, inputs: Tuple[List[int]], output: Tensor):
-                if not skip:
-                    return
-                
-                # called from <A> below
-                import pdb; pdb.set_trace()
-                a=1
-                pass
-            
-            token_embedding = get_token_embedding(clip)
-            self.hook_layer(token_embedding, hook_emb)
-        
         def hook(mod: nn.Module, inputs: Tuple[List[str]], output: Tensor):
             nonlocal skip
             
@@ -158,12 +145,37 @@ class Hook(SDHook):
                     # without any (negative) prompts
                     ks.append('')
                 
+                handle = None
                 try:
                     # <A>
+                    if self.zerofill:
+                        def hook_emb(mod: nn.Module, inputs: Tuple[Tensor], output: Tensor):
+                            nonlocal handle
+                            
+                            # one-shot
+                            if handle is not None:
+                                handle.remove()
+                                handle = None
+                            
+                            ids, = inputs
+                            
+                            # ids_.shape == (1, 77)
+                            # output.shape == (1, 77, 768)
+                            assert ids.shape == output.shape[0:2]
+                            
+                            output = output.clone()
+                            output[ids == cutoff.padding.id] = 0.0
+                            return output
+                        
+                        token_embedding = get_token_embedding(clip)
+                        handle = self.hook_layer(token_embedding, hook_emb)
+                        
                     skip = True
                     vs = mod(ks)
                 finally:
                     skip = False
+                    if handle is not None:
+                        handle.remove()
                 
                 tensor = output[pidx, :, :] # e.g. (77, 768)
                 for k, t in zip(ks, vs):
