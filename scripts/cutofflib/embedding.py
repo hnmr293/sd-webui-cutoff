@@ -51,8 +51,16 @@ class CutoffPrompt:
     
     @staticmethod
     def _cutoff(prompt: str, clip: CLIP, tokens: List[str], padding: str):
+        def token_count(text: str):
+            tt = token_to_block(clip, text)
+            # tt[0] == clip.id_start (<|startoftext|>)
+            for index, (t, _) in enumerate(tt):
+                if t.id == clip.id_end: # <|endoftext|>
+                    return index - 1
+            return 0 # must not happen...
+        
         re_targets = [ re.compile(r'\b' + re.escape(x) + r'\b') for x in tokens ]
-        replacer = [ ' ' + ' '.join([padding] * len(clip.tokenize(x))) + ' ' for x in tokens ]
+        replacer = [ ' ' + ' '.join([padding] * token_count(x)) + ' ' for x in tokens ]
         
         rows: List[Tuple[str,str]] = []
         for block in prompt.split(','):
@@ -184,7 +192,7 @@ def token_to_block(clip: CLIP, prompt: str):
             if len(current_tokens) == CHUNK_LENGTH:
                 next_chunk()
             
-            embedding, _ = clip.hijack.embedding_db.find_embedding_at_position(tokens, p)
+            embedding, embedding_length_in_tokens = clip.hijack.embedding_db.find_embedding_at_position(tokens, p)
             if embedding is None:
                 if token == comma.id:
                     current_tokens.append((te.token(token), -1))
@@ -198,7 +206,7 @@ def token_to_block(clip: CLIP, prompt: str):
                 next_chunk()
 
             current_tokens += [(te.token(0), current_block)] * emb_len
-            p += emb_len
+            p += embedding_length_in_tokens
             
     if len(current_tokens) > 0:
         next_chunk()
