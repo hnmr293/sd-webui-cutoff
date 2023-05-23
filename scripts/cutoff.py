@@ -94,7 +94,7 @@ class Hook(SDHook):
             assert isinstance(mod, CLIP)
             
             prompts, *rest = inputs
-            assert len(prompts) == output.shape[0]
+            assert len(prompts) == output.shape[0], f"number of prompts different than expected: {len(prompts)} != {output.shape[0]}"
             
             # Check wether we are processing Negative prompt or not.
             # I firmly believe there is no one who uses a negative prompt 
@@ -139,7 +139,7 @@ class Hook(SDHook):
                 
                 tensor = output[pidx, :, :] # e.g. (77, 768)
                 for k, t in zip(ks, vs):
-                    assert tensor.shape == t.shape
+                    assert tensor.shape == t.shape, f"tensor and t must have same shape\ntensor: {tensor.shape}\n t:{t.shape}" 
                     for tidx, token in prompt_to_tokens[k]:
                         log(f'{tidx:03} {token.token:<16} {k}')
                         tensor[tidx, :] = self.interpolate(tensor[tidx,:], t[tidx,:], self.weight)
