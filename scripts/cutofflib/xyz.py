@@ -109,7 +109,7 @@ def create_options(ext_name: str, script: type, AxisOptionClass: type, axis_opti
             def fn(p, x, xs):
                 __set_value(p, script, index, x)
             
-            name = f'{ext_name} {param}'
+            name = f'[{ext_name}] {param}'
             return opts.create(name, type_fn, fn, choices)
         
         options = [
