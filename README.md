@@ -8,6 +8,10 @@
 Upper is newer.
 
 <dl>
+<dt>026ff95a492a533a4a6e5fb2959c2324258c232c</dt>
+<dd>SDXL support.</dd>
+<dt>527ed922b2c4f8d2620376589dfce0f9f4b622ad</dt>
+<dd>Add support for the newer version of WebUI.</dd>
 <dt>20e87ce264338b824296b7559679ed1bb0bdacd7</dt>
 <dd>Skip empty targets.</dd>
 <dt>03bfe60162ba418e18dbaf8f1b9711fd62195ef3</dt>
@@ -20,6 +24,8 @@ Upper is newer.
 ## What is this?
 
 This is an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui) which limits the tokens' influence scope.
+
+SDv1, SDv2 and SDXL are supported.
 
 ## Usage
 
@@ -46,6 +52,8 @@ If the generated image was corrupted or something like that, try to change the `
 
 ## Examples
 
+### SDv1
+
 ```
 7th_anime_v3_A-fp16 / kl-f8-anime2 / DPM++ 2M Karras / 15 steps / 512x768
 Prompt: a cute girl, white shirt with green tie, red shoes, blue hair, yellow eyes, pink skirt
@@ -64,6 +72,26 @@ Sample 2. (use `SLerp` for interpolation)
 Sample 3.
 
 ![sample 3](./images/sample-3.png)
+
+### SDXL
+
+It seems that the Stability AI's base model of SDXL is much improved on token separation. So the effect of `cutoff` is limited.
+
+```
+(some models) / sdxl_vae / DPM++ 3M SDE / 50 steps / 768x1344
+Prompt: full body shot of a cute girl, wearing white shirt with green tie, red shoes, blue hair, yellow eyes, pink skirt
+Negative Prompt: (low quality, worst quality:1.4), nsfw, close up
+Target tokens: white, green, red, blue, yellow, pink
+Cutoff weight: 1.0
+```
+
+Sample 4. (Model = `sd_xl_base_1.0`)
+
+![sample 4](./images/sample-4_small.png)
+
+Sample 5. (Model = `hassakuXLSfwNsfw_alphaV07`)
+
+![sample 5](./images/sample-5_small.png)
 
 ## How it works
 
