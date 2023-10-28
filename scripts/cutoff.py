@@ -161,7 +161,7 @@ class Hook(SDHook):
                 
                 tensor = output_vector[pidx, :, :] # e.g. (77, 768)
                 for k, t in zip(ks, vs):
-                    assert tensor.shape == t.shape
+                    assert tensor.shape == t.shape, f"tensor and t must have same shape\ntensor: {tensor.shape}\n t:{t.shape}" 
                     for tidx, token in prompt_to_tokens[k]:
                         log(f'{tidx:03} {token.token:<16} {k}')
                         tensor[tidx, :] = self.interpolate(tensor[tidx,:], t[tidx,:], self.weight)
