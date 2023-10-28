@@ -117,7 +117,7 @@ class Hook(SDHook):
                     vs = mod(new_inputs)
                     return vs['crossattn']
             
-            assert len(prompts) == output_vector.shape[0], f"#prompt={len(prompt)}, output.shape={output_vector.shape}"
+            assert len(prompts) == output_vector.shape[0], f"number of prompts different than expected: {len(prompts)} != {output_vector.shape[0]}"
             
             # Check wether we are processing Negative prompt or not.
             # I firmly believe there is no one who uses a negative prompt 
