@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Dict
 
 import numpy as np
 import torch
@@ -10,7 +10,7 @@ from modules.processing import StableDiffusionProcessing
 from modules import scripts
 
 from scripts.cutofflib.sdhook import SDHook
-from scripts.cutofflib.embedding import CLIP, generate_prompts, token_to_block
+from scripts.cutofflib.embedding import CLIP, CLIP_SDXL, generate_prompts, token_to_block
 from scripts.cutofflib.utils import log, set_debug
 from scripts.cutofflib.xyz import init_xyz
 
@@ -84,17 +84,40 @@ class Hook(SDHook):
         
         skip = False
         
-        def hook(mod: nn.Module, inputs: Tuple[List[str]], output: Tensor):
+        def hook(mod: nn.Module, inputs: Tuple[Union[List[str],Dict[str,Tensor]]], output: Union[Tensor,Dict[str,Tensor]]):
             nonlocal skip
             
             if skip:
                 # called from <A> below
                 return
             
-            assert isinstance(mod, CLIP)
+            if not hasattr(p.sd_model, 'is_sdxl') or not p.sd_model.is_sdxl:
+                # SD
+                assert isinstance(mod, CLIP)
+                prompts = inputs[0]
+                output = output.clone()
+                output_vector = output
+                def process(prompts):
+                    return mod(prompts)
+            else:
+                # SDXL
+                assert isinstance(mod, CLIP_SDXL)
+                prompts = inputs[0]['txt']
+                output = { k : v.clone() for k, v in output.items() }
+                assert 'crossattn' in output, f'output keys: {", ".join(output.keys())}'
+                output_vector = output['crossattn']
+                def process(prompts):
+                    new_inputs = dict()
+                    for k, v in inputs[0].items():
+                        if isinstance(v, Tensor):
+                            new_inputs[k] = torch.cat([v]*len(prompts), 0)
+                        else:
+                            new_inputs[k] = [v]*len(prompts)
+                    new_inputs['txt'] = prompts
+                    vs = mod(new_inputs)
+                    return vs['crossattn']
             
-            prompts, *rest = inputs
-            assert len(prompts) == output.shape[0]
+            assert len(prompts) == output_vector.shape[0], f"#prompt={len(prompt)}, output.shape={output_vector.shape}"
             
             # Check wether we are processing Negative prompt or not.
             # I firmly believe there is no one who uses a negative prompt 
@@ -104,7 +127,6 @@ class Hook(SDHook):
                     # Now we are processing Negative prompt and skip it.
                     return
             
-            output = output.clone()
             for pidx, prompt in enumerate(prompts):
                 tt = token_to_block(mod, prompt)
                 
@@ -133,11 +155,11 @@ class Hook(SDHook):
                 try:
                     # <A>
                     skip = True
-                    vs = mod(ks)
+                    vs = process(ks)
                 finally:
                     skip = False
                 
-                tensor = output[pidx, :, :] # e.g. (77, 768)
+                tensor = output_vector[pidx, :, :] # e.g. (77, 768)
                 for k, t in zip(ks, vs):
                     assert tensor.shape == t.shape
                     for tidx, token in prompt_to_tokens[k]:

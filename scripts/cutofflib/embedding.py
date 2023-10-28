@@ -5,13 +5,18 @@ from typing import Union, List, Tuple
 import numpy as np
 import open_clip
 from modules.sd_hijack_clip import FrozenCLIPEmbedderWithCustomWordsBase as CLIP
+try:
+    from sgm.modules import GeneralConditioner as CLIP_SDXL
+except:
+    print("[Cutoff] failed to load `sgm.modules.GeneralConditioner`")
 from modules import prompt_parser, shared
 from scripts.cutofflib.utils import log
 
 class ClipWrapper:
-    def __init__(self, te: CLIP):
+    def __init__(self, te: Union[CLIP,CLIP_SDXL]):
         self.te = te
         self.v1 = hasattr(te.wrapped, 'tokenizer')
+        self.sdxl = hasattr(te, 'embedders')
         self.t = (
             te.wrapped.tokenizer if self.v1
             else open_clip.tokenizer._tokenizer
@@ -40,6 +45,27 @@ class ClipWrapper:
             return Token(token, self.id_to_token(token))
         else:
             return Token(self.token_to_id(token), token)
+    
+    @property
+    def id_start(self):
+        if self.sdxl:
+            return self.te.embedders[0].id_start
+        else:
+            return self.te.id_start
+    
+    @property
+    def id_end(self):
+        if self.sdxl:
+            return self.te.embedders[0].id_end
+        else:
+            return self.te.id_end
+    
+    @property
+    def hijack(self):
+        if self.sdxl:
+            return self.te.embedders[0].hijack
+        else:
+            return self.te.hijack
 
 
 @dataclass
@@ -52,10 +78,11 @@ class CutoffPrompt:
     @staticmethod
     def _cutoff(prompt: str, clip: CLIP, tokens: List[str], padding: str):
         def token_count(text: str):
+            te = ClipWrapper(clip)
             tt = token_to_block(clip, text)
-            # tt[0] == clip.id_start (<|startoftext|>)
+            # tt[0] == te.id_start (<|startoftext|>)
             for index, (t, _) in enumerate(tt):
-                if t.id == clip.id_end: # <|endoftext|>
+                if t.id == te.id_end: # <|endoftext|>
                     return index - 1
             return 0 # must not happen...
         
@@ -119,7 +146,7 @@ def generate_prompts(
     if not isinstance(padding, Token):
         o_pad = padding
         padding = te.token(padding)
-        if padding.id == clip.id_end:
+        if padding.id == te.id_end:
             raise ValueError(f'`{o_pad}` is not a valid token.')
     
     result = CutoffPrompt(prompt, clip, targets, padding.token.replace('</w>', ''))
@@ -142,8 +169,8 @@ def token_to_block(clip: CLIP, prompt: str):
     tokenized: List[List[int]] = clip.tokenize([text for text, _ in parsed])
     
     CHUNK_LENGTH = 75
-    id_start = te.token(clip.id_start) # type: ignore
-    id_end = te.token(clip.id_end) # type: ignore
+    id_start = te.token(te.id_start) # type: ignore
+    id_end = te.token(te.id_end) # type: ignore
     comma = te.token(',</w>')
     
     last_comma = -1
@@ -192,7 +219,7 @@ def token_to_block(clip: CLIP, prompt: str):
             if len(current_tokens) == CHUNK_LENGTH:
                 next_chunk()
             
-            embedding, embedding_length_in_tokens = clip.hijack.embedding_db.find_embedding_at_position(tokens, p)
+            embedding, embedding_length_in_tokens = te.hijack.embedding_db.find_embedding_at_position(tokens, p)
             if embedding is None:
                 if token == comma.id:
                     current_tokens.append((te.token(token), -1))
