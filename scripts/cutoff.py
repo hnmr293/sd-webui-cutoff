@@ -253,5 +253,10 @@ class Script(scripts.Script):
             f'{NAME} strong': strong,
             f'{NAME} interpolation': intp,
         })
+        
+        if hasattr(p, 'cached_c'):
+            p.cached_c = [None, None]
+        if hasattr(p, 'cached_uc'):
+            p.cached_uc = [None, None]
 
 init_xyz(Script, NAME)
