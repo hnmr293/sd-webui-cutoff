@@ -9,6 +9,7 @@ try:
     from sgm.modules import GeneralConditioner as CLIP_SDXL
 except:
     print("[Cutoff] failed to load `sgm.modules.GeneralConditioner`")
+    CLIP_SDXL = int
 from modules import prompt_parser, shared
 from scripts.cutofflib.utils import log
 
