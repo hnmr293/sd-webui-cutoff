@@ -268,7 +268,7 @@ class Script(scripts.Script):
         
         p.extra_generation_params.update({
             f'{NAME} enabled': enabled,
-            f'{NAME} targets': targets,
+            f'{NAME} targets': targets_,
             f'{NAME} padding': padding,
             f'{NAME} weight': weight,
             f'{NAME} disable_for_neg': disable_neg,
